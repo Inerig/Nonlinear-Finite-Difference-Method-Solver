@@ -3,193 +3,130 @@ function parseFunction(funcStr) {
         // Validate the function string
         if (!/^[a-zA-Z0-9\s\+\-\*\/\(\)\.\,\[\]\^\%\&\|\!\<\>\=\~\`\@\#\$\^\\]+$/.test(funcStr)) {
             throw new Error("Invalid characters in function.");
-        }
-        // Create a safe function from the string input with predefined Math functions
-        const mathFunctions = {
-            Math: Math,
-            exp: Math.exp,
-            log: Math.log,
-            sqrt: Math.sqrt,
-            pow: Math.pow,
-            sin: Math.sin,
-            cos: Math.cos,
-            tan: Math.tan,
-            asin: Math.asin,
-            acos: Math.acos,
-            atan: Math.atan,
-            sinh: Math.sinh,
-            cosh: Math.cosh,
-            tanh: Math.tanh,
-            abs: Math.abs,
-            floor: Math.floor,
-            ceil: Math.ceil,
-            round: Math.round,
-            trunc: Math.trunc,
-            random: Math.random
-        };
+       function adjustWidth(input) {
+    input.style.width = (input.value.length + 2) + 'ch';
+}
 
-        const functionString = `with(Math){return (${funcStr})}`;
-        return new Function('x', 'y', 'yPrime', functionString);
-    } catch (error) {
-        console.error("Error parsing function:", error);
-        throw new Error("Invalid function input. Please make sure your function is correctly formatted.");
-    }
+function fyApprox(f, x, y, yPrime) {
+    const delta = 1e-8;
+    const f1 = f(x, y + delta, yPrime);
+    const f2 = f(x, y - delta, yPrime);
+    return (f1 - f2) / (2 * delta); // Approximate partial derivative fy
 }
 
 function solveAndDisplay() {
+    const fInput = document.getElementById('functionInput').value;
     const a = parseFloat(document.getElementById('a').value);
     const b = parseFloat(document.getElementById('b').value);
-    const n = parseInt(document.getElementById('n').value);
     const alpha = parseFloat(document.getElementById('alpha').value);
     const beta = parseFloat(document.getElementById('beta').value);
-    const tolerance = parseFloat(document.getElementById('tolerance').value);
-    const maxIterations = parseInt(document.getElementById('maxIterations').value);
-    const funcStr = document.getElementById('functionInput').value.trim();
-    const decimalPlaces = parseInt(document.getElementById('decimalPlaces').value);
+    const N = parseInt(document.getElementById('n').value);
+    const TOL = parseFloat(document.getElementById('tolerance').value);
+    const M = parseInt(document.getElementById('maxIterations').value);
+    const decimals = parseInt(document.getElementById('decimalPlaces').value);
 
-    if (!funcStr || isNaN(decimalPlaces) || decimalPlaces < 0 || isNaN(tolerance) || tolerance <= 0 || isNaN(maxIterations) || maxIterations <= 0) {
-        alert("Please enter valid functions, non-negative integers for decimal places, positive tolerance, and a positive integer for maximum iterations.");
-        return;
+    const h = (b - a) / (N + 1);
+    const x = [];
+    for (let i = 0; i <= N + 1; i++) {
+        x.push(a + i * h);
     }
 
-    try {
-        console.log("Function String:", funcStr);  // Debug: Check the input function string
-        const f = parseFunction(funcStr);
-        console.log("Parsed Function:", f.toString());  // Debug: Check the parsed function
+    const f = new Function('x', 'y', 'yPrime', `return ${fInput};`);
 
-        // Compute step size
-        const h = (b - a) / (n + 1);
-        // Initialize arrays to store results
-        let x = new Array(n + 2);
-        let w = new Array(n + 2);
-        let v = new Array(n + 2);
-        // Set initial conditions
-        x[0] = a;
-        x[n + 1] = b;
-        w[0] = alpha;
-        w[n + 1] = beta;
-
-        // Set initial guesses for w_i
-        for (let i = 1; i < n; i++) {
-            x[i] = a + i * h;
-            w[i] = alpha + (i * (beta - alpha)) / (b - a);
-        }
-
-        let k = 1;
-        let converged = false;
-
-        while (k <= maxIterations && !converged) {
-            // Set coefficients for the first point
-            let a1 = 2 + h * h * f(x[1], w[1], (w[2] - w[0]) / (2 * h));
-            let b1 = -1 + (h / 2) * f(x[1], w[1], (w[2] - w[0]) / (2 * h));
-            let d1 = -(2 * w[1] - w[2] - w[0] + h * h * f(x[1], w[1], (w[2] - w[0]) / (2 * h))) / 2;
-
-            // Set coefficients for internal points
-            for (let i = 2; i < n; i++) {
-                x[i] = a + i * h;
-                let t = (w[i + 1] - w[i - 1]) / (2 * h);
-                let ai = 2 + h * h * f(x[i], w[i], t);
-                let bi = -1 + (h / 2) * f(x[i], w[i], t);
-                let ci = -1 - (h / 2) * f(x[i], w[i], t);
-                let di = -(2 * w[i] - w[i + 1] - w[i - 1] + h * h * f(x[i], w[i], t)) / 2;
-                // Store coefficients in arrays
-                a[i] = ai;
-                b[i] = bi;
-                c[i] = ci;
-                d[i] = di;
-            }
-
-            // Set coefficients for the last point
-            x[n] = b - h;
-            let t = (beta - w[n - 1]) / (2 * h);
-            let aN = 2 + h * h * f(x[n], w[n], t);
-            let cN = -1 - (h / 2) * f(x[n], w[n], t);
-            let dN = -(2 * w[n] - w[n - 1] - beta + h * h * f(x[n], w[n], t)) / 2;
-
-            // Solve the tridiagonal system using Thomas algorithm
-            let l = new Array(n);
-            let u = new Array(n);
-            let z = new Array(n + 1);
-            l[0] = a1;
-            u[0] = b1 / a1;
-            z[0] = d1 / l[0];
-
-            for (let i = 2; i < n; i++) {
-                l[i] = a[i] - c[i] * u[i - 1];
-                u[i] = b[i] / l[i];
-                z[i] = (d[i] - c[i] * z[i - 1]) / l[i];
-            }
-
-            l[n] = aN - cN * u[n - 1];
-            z[n] = (dN - cN * z[n - 1]) / l[n];
-
-            v[n] = z[n];
-
-            for (let i = n - 1; i > 0; i--) {
-                v[i] = z[i] - u[i] * v[i + 1];
-            }
-
-            // Update w_i
-            for (let i = 0; i <= n + 1; i++) {
-                w[i] = w[i] + v[i];
-            }
-
-            // Check convergence
-            let maxAbsV = Math.max(...Math.abs(v));
-
-            if (maxAbsV < tolerance) {
-                converged = true;
-            } else {
-                k++;
-            }
-        }
-
-        if (converged) {
-            // Display calculations for Nonlinear Finite-Difference Method
-            const nldfCalculationsContent = document.getElementById('nldfCalculationsContent');
-            nldfCalculationsContent.innerHTML = '';
-
-            for (let i = 0; i <= n + 1; i++) {
-                const step = document.createElement('div');
-                step.className = 'step';
-                step.innerHTML = `
-                    <div class="formula">Step ${i}: x = ${x[i].toFixed(decimalPlaces)}, ω = ${w[i].toFixed(decimalPlaces)}</div>
-                    <div class="formula">h = ${h.toFixed(decimalPlaces)}</div>
-                    <div class="formula">Coefficients:</div>
-                    <div class="formula">a${i} = 2 + h²f(x${i}, w${i}, (w${i+1} - w${i-1})/(2h)) = 2 + ${h.toFixed(decimalPlaces)}² * ${f(x[i], w[i], (w[i + 1] - w[i - 1]) / (2 * h)).toFixed(decimalPlaces)} = ${a[i].toFixed(decimalPlaces)}</div>
-                    <div class="formula">b${i} = -1 + (h/2)f(x${i}, w${i}, (w${i+1} - w${i-1})/(2h)) = -1 + (0.5 * ${h.toFixed(decimalPlaces)}) * ${f(x[i], w[i], (w[i + 1] - w[i - 1]) / (2 * h)).toFixed(decimalPlaces)} = ${b[i].toFixed(decimalPlaces)}</div>
-                    <div class="formula">c${i} = -1 - (h/2)f(x${i}, w${i}, (w${i+1} - w${i-1})/(2h)) = -1 - (0.5 * ${h.toFixed(decimalPlaces)}) * ${f(x[i], w[i], (w[i + 1] - w[i - 1]) / (2 * h)).toFixed(decimalPlaces)} = ${c[i].toFixed(decimalPlaces)}</div>
-                    <div class="formula">d${i} = -(2w${i} - w${i+1} - w${i-1} + h²f(x${i}, w${i}, (w${i+1} - w${i-1})/(2h)))/2 = -(${2 * w[i].toFixed(decimalPlaces)} - ${w[i + 1].toFixed(decimalPlaces)} - ${w[i - 1].toFixed(decimalPlaces)} + ${h.toFixed(decimalPlaces)}² * ${f(x[i], w[i], (w[i + 1] - w[i - 1]) / (2 * h)).toFixed(decimalPlaces)})/2 = ${d[i].toFixed(decimalPlaces)}</div>
-                    <div class="formula">l${i} = a${i} - c${i}u${i-1} = ${a[i].toFixed(decimalPlaces)} - ${c[i].toFixed(decimalPlaces)} * ${u[i-1].toFixed(decimalPlaces)} = ${l[i].toFixed(decimalPlaces)}</div>
-                    <div class="formula">u${i} = b${i}/l${i} = ${b[i].toFixed(decimalPlaces)} / ${l[i].toFixed(decimalPlaces)} = ${u[i].toFixed(decimalPlaces)}</div>
-                    <div class="formula">z${i} = (d${i} - c${i}z${i-1})/l${i} = (${d[i].toFixed(decimalPlaces)} - ${c[i].toFixed(decimalPlaces)} * ${z[i-1].toFixed(decimalPlaces)}) / ${l[i].toFixed(decimalPlaces)} = ${z[i].toFixed(decimalPlaces)}</div>
-                    <div class="formula">v${i} = z${i} - u${i}v${i+1} = ${z[i].toFixed(decimalPlaces)} - ${u[i].toFixed(decimalPlaces)} * ${v[i + 1].toFixed(decimalPlaces)} = ${v[i].toFixed(decimalPlaces)}</div>
-                    <div class="formula">ω${i} = ω${i} + v${i} = ${w[i].toFixed(decimalPlaces)} + ${v[i].toFixed(decimalPlaces)} = ${w[i].toFixed(decimalPlaces)}</div>
-                `;
-                nldfCalculationsContent.appendChild(step);
-            }
-
-            // Populate the table for Nonlinear Finite-Difference Method
-            const nldfTableBody = document.querySelector('#nldfResultTable tbody');
-            nldfTableBody.innerHTML = '';
-            for (let i = 0; i <= n + 1; i++) {
-                nldfTableBody.innerHTML += `<tr><td>${i}</td><td>${x[i].toFixed(decimalPlaces)}</td><td>${w[i].toFixed(decimalPlaces)}</td></tr>`;
-            }
-        } else {
-            alert("Maximum number of iterations exceeded.");
-        }
-    } catch (e) {
-        alert(`Error: ${e.message}`);
+    let w = [];
+    w[0] = alpha;
+    for (let i = 1; i <= N; i++) {
+        w[i] = alpha + (i * (beta - alpha) / (b - a)) * h;
     }
-}
+    w[N + 1] = beta;
 
-function adjustWidth(input) {
-    // Calculate the width based on the number of characters
-    const charCount = input.value.length;
-    const minWidth = 100;
-    const maxWidth = 300;
-    const stepSize = (maxWidth - minWidth) / 100; // Assuming maximum character count is 100
+    const calculationsDiv = document.getElementById('nldfCalculationsContent');
+    const tbody = document.getElementById('nldfResultTable').querySelector('tbody');
+    calculationsDiv.innerHTML = '';
+    tbody.innerHTML = '';
 
-    const newWidth = Math.min(maxWidth, minWidth + charCount * stepSize);
-    input.style.width = `${newWidth}px`;
+    let success = false;
+    let k = 1;
+    while (k <= M) {
+        const aCoeff = [], bCoeff = [], cCoeff = [], dCoeff = [];
+        calculationsDiv.innerHTML += `<div class="step"><strong>Iteration ${k}:</strong></div>`;
+
+        // Step 5
+        let xi = a + h;
+        let t = (w[2] - alpha) / (2 * h);
+        aCoeff[1] = 2 + h * h * fyApprox(f, xi, w[1], t);
+        bCoeff[1] = -1 + (h / 2) * fyApprox(f, xi, w[1], t);
+        dCoeff[1] = -(2 * w[1] - w[2] - alpha + h * h * f(xi, w[1], t));
+
+        calculationsDiv.innerHTML += `<div>Step 5: x = ${xi.toFixed(decimals)}, t = ${t.toFixed(decimals)}, a1 = ${aCoeff[1].toFixed(decimals)}, b1 = ${bCoeff[1].toFixed(decimals)}, d1 = ${dCoeff[1].toFixed(decimals)}</div>`;
+
+        // Step 6
+        for (let i = 2; i <= N - 1; i++) {
+            xi = a + i * h;
+            t = (w[i + 1] - w[i - 1]) / (2 * h);
+            aCoeff[i] = 2 + h * h * fyApprox(f, xi, w[i], t);
+            bCoeff[i] = -1 + (h / 2) * fyApprox(f, xi, w[i], t);
+            cCoeff[i] = -1 - (h / 2) * fyApprox(f, xi, w[i], t);
+            dCoeff[i] = -(2 * w[i] - w[i + 1] - w[i - 1] + h * h * f(xi, w[i], t));
+
+            calculationsDiv.innerHTML += `<div>Step 6: i = ${i}, x = ${xi.toFixed(decimals)}, t = ${t.toFixed(decimals)}, ai = ${aCoeff[i].toFixed(decimals)}, bi = ${bCoeff[i].toFixed(decimals)}, ci = ${cCoeff[i].toFixed(decimals)}, di = ${dCoeff[i].toFixed(decimals)}</div>`;
+        }
+
+        // Step 7
+        xi = b - h;
+        t = (beta - w[N - 1]) / (2 * h);
+        aCoeff[N] = 2 + h * h * fyApprox(f, xi, w[N], t);
+        cCoeff[N] = -1 - (h / 2) * fyApprox(f, xi, w[N], t);
+        dCoeff[N] = -(2 * w[N] - w[N - 1] - beta + h * h * f(xi, w[N], t));
+
+        calculationsDiv.innerHTML += `<div>Step 7: x = ${xi.toFixed(decimals)}, t = ${t.toFixed(decimals)}, aN = ${aCoeff[N].toFixed(decimals)}, cN = ${cCoeff[N].toFixed(decimals)}, dN = ${dCoeff[N].toFixed(decimals)}</div>`;
+
+        // Step 8 to 12 (Thomas algorithm for tridiagonal system)
+        const l = [], u = [], z = [], v = [];
+
+        l[1] = aCoeff[1];
+        u[1] = bCoeff[1] / l[1];
+        z[1] = dCoeff[1] / l[1];
+
+        for (let i = 2; i <= N - 1; i++) {
+            l[i] = aCoeff[i] - cCoeff[i] * u[i - 1];
+            u[i] = bCoeff[i] / l[i];
+            z[i] = (dCoeff[i] - cCoeff[i] * z[i - 1]) / l[i];
+        }
+
+        l[N] = aCoeff[N] - cCoeff[N] * u[N - 1];
+        z[N] = (dCoeff[N] - cCoeff[N] * z[N - 1]) / l[N];
+
+        v[N] = z[N];
+        for (let i = N - 1; i >= 1; i--) {
+            v[i] = z[i] - u[i] * v[i + 1];
+        }
+
+        const vNorm = Math.max(...v.slice(1).map(Math.abs));
+        for (let i = 1; i <= N; i++) {
+            w[i] += v[i];
+        }
+
+        calculationsDiv.innerHTML += `<div>vNorm = ${vNorm.toFixed(decimals)}</div>`;
+
+        if (vNorm <= TOL) {
+            success = true;
+            break;
+        }
+
+        k++;
+    }
+
+    // Display results
+    for (let i = 0; i <= N + 1; i++) {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${i}</td><td>${x[i].toFixed(decimals)}</td><td>${w[i].toFixed(decimals)}</td>`;
+        tbody.appendChild(row);
+    }
+
+    if (!success) {
+        calculationsDiv.innerHTML += `<div style="color:red;">Maximum number of iterations exceeded!</div>`;
+    } else {
+        calculationsDiv.innerHTML += `<div style="color:green;">Solution found in ${k} iterations!</div>`;
+    }
 }
