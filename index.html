@@ -6,69 +6,84 @@
 <title>Nonlinear Finite-Difference Method Solver</title>
 <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
 </head>
+
 <body>
 <div class="container">
-    <h1 style="text-align: center;">Nonlinear Finite-Difference Method Solver</h1>
+    <h1>Nonlinear Finite-Difference Method Solver</h1>
+
     <div class="form-group">
         <label for="functionInput">Enter your function f(x, y, y'): </label>
         <div class="input-container">
             <input type="text" id="functionInput" placeholder="f(x, y, y')" class="function-input" oninput="adjustWidth(this)">
         </div>
     </div>
+
     <div class="form-group">
         <label for="a">Left endpoint (a): </label>
         <div class="input-container">
             <input type="number" id="a" value="0" oninput="adjustWidth(this)">
         </div>
     </div>
+
     <div class="form-group">
         <label for="b">Right endpoint (b): </label>
         <div class="input-container">
             <input type="number" id="b" value="1" oninput="adjustWidth(this)">
         </div>
     </div>
+
     <div class="form-group">
         <label for="alpha">Boundary condition y(a) (α): </label>
         <div class="input-container">
             <input type="number" id="alpha" value="1" oninput="adjustWidth(this)">
         </div>
     </div>
+
     <div class="form-group">
         <label for="beta">Boundary condition y(b) (β): </label>
         <div class="input-container">
             <input type="number" id="beta" value="1" oninput="adjustWidth(this)">
         </div>
     </div>
+
     <div class="form-group">
         <label for="n">Number of internal points (N): </label>
         <div class="input-container">
             <input type="number" id="n" value="10" oninput="adjustWidth(this)">
         </div>
     </div>
+
     <div class="form-group">
         <label for="tolerance">Tolerance (TOL): </label>
         <div class="input-container">
             <input type="number" id="tolerance" value="1e-6" oninput="adjustWidth(this)">
         </div>
     </div>
+
     <div class="form-group">
         <label for="maxIterations">Maximum number of iterations (M): </label>
         <div class="input-container">
             <input type="number" id="maxIterations" value="100" oninput="adjustWidth(this)">
         </div>
     </div>
+
     <div class="form-group">
         <label for="decimalPlaces">Decimal places: </label>
         <div class="input-container">
             <input type="number" id="decimalPlaces" value="4" oninput="adjustWidth(this)">
         </div>
     </div>
+
     <button onclick="solveAndDisplay()">Solve</button>
+
     <div class="calculations">
         <h2>Nonlinear Finite-Difference Method Calculations:</h2>
         <div id="nldfCalculationsContent"></div>
     </div>
+
     <table id="nldfResultTable">
         <thead>
             <tr>
@@ -80,6 +95,7 @@
         <tbody>
         </tbody>
     </table>
+
     <div class="instructions">
         <p>Instructions:</p>
         <ul>
@@ -90,24 +106,31 @@
             <li>Avoid using spaces between operators and numbers or variables.</li>
         </ul>
     </div>
+
     <div class="example">
         <p>Examples:</p>
         <ul>
-            <li><strong>Linear Function:</strong> \( f(x, y, y') = y' - y \) → <code>yPrime - y</code></li>
-            <li><strong>Exponential Function:</strong> \( f(x, y, y') = y' - e^{y} \) → <code>yPrime - Math.exp(y)</code></li>
-            <li><strong>Logarithmic Function:</strong> \( f(x, y, y') = y' - \ln(y) \) → <code>yPrime - Math.log(y)</code></li>
-            <li><strong>Trigonometric Function:</strong> \( f(x, y, y') = y' - \sin(y) \) → <code>yPrime - Math.sin(y)</code></li>
-            <li><strong>Hyperbolic Function:</strong> \( f(x, y, y') = y' - \sinh(y) \) → <code>yPrime - Math.sinh(y)</code></li>
-            <li><strong>Power Function:</strong> \( f(x, y, y') = y' - y^2 \) → <code>yPrime - Math.pow(y, 2)</code></li>
-            <li><strong>Rational Function:</strong> \( f(x, y, y') = y' - \frac{1}{y} \) → <code>yPrime - 1/y</code></li>
-            <li><strong>Piecewise Function:</strong> \( f(x, y, y') = 
-                \begin{cases} 
-                    y' - y & \text{if } x < 0 \\
-                    y' - 1 & \text{otherwise}
-                \end{cases} \) → <code>(x < 0) ? (yPrime - y) : (yPrime - 1)</code></li>
+            <li><strong>Linear:</strong> <code>yPrime - y</code></li>
+            <li><strong>Exponential:</strong> <code>yPrime - Math.exp(y)</code></li>
+            <li><strong>Logarithmic:</strong> <code>yPrime - Math.log(y)</code></li>
+            <li><strong>Trigonometric:</strong> <code>yPrime - Math.sin(y)</code></li>
+            <li><strong>Hyperbolic:</strong> <code>yPrime - Math.sinh(y)</code></li>
+            <li><strong>Power:</strong> <code>yPrime - Math.pow(y,2)</code></li>
+            <li><strong>Rational:</strong> <code>yPrime - 1/y</code></li>
+            <li><strong>Piecewise:</strong> <code>(x < 0) ? (yPrime - y) : (yPrime - 1)</code></li>
         </ul>
     </div>
 </div>
+
+
 <script src="script.js"></script>
+
+
+<script>
+function adjustWidth(input) {
+    input.style.width = (input.value.length + 1) + "ch";
+}
+</script>
+
 </body>
 </html>
